@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>LPC Tester</title>
+    <link rel="stylesheet" type="text/css" href="../css/lpcTester.css">
+    <script src="../../libs/three.js"></script>
+    <script src="../../libs/dat.gui.min.js"></script>
+    <script src="../../libs/stats.min.js"></script>
+    <style></style>
+</head>
+<body>
+    <h1>lpc dumb-dumb</h1>
+    <div class="lpc-container">
+        <div class="slider-and-canvas">
+            <div id="waveHolder"></div>
+            <div id="slider" class="slider lpc-range">
+                <input type="range" min="25" value="40" max="45">
+                <output id="output" name="rangeVal"></output>
+                <div id="sand"></div>
+            </div> <!-- end .slider -->
+        </div><!-- end slider-and-canvas -->
+    </div> <!-- end lpc-container -->
+
+    <script>
+        // globals
+        var renderer, scene, camera, control, stats; // 3js stuff
+
+        var container, waveHolder, slider, output, canvas; // html eles
+
+        var line, peaks, points, frequencyScaling, peakSegments; // lpc stuff
+
+        var dummyPointCount = 256;
+        var dummyPoints = [];
+        for (var i=0; i<dummyPointCount; i++)
+            dummyPoints.push(0);
+        var dummyNoisiness = 0.05
+
+        // requestAnim shim layer by Paul Irish
+        window.requestAnimFrame = (function(){
+            return  window.requestAnimationFrame       ||
+            window.webkitRequestAnimationFrame ||
+            window.mozRequestAnimationFrame    ||
+            window.oRequestAnimationFrame      ||
+            window.msRequestAnimationFrame     ||
+            function(/* function */ callback, /* DOMElement */ element){
+                window.setTimeout(callback, 1000 / 60);
+            };
+        })();
+
+        function linScale(v, inlow, inhigh, outlow, outhigh) {
+            var range = outhigh - outlow;
+            var domain = inhigh - inlow;
+            var ov = (v - inlow) / domain;
+            ov = (ov * range) + outlow;
+            return ov;
+        }
+
+
+        function getDummyLPCCoefficients(cb) {
+            var msg = {};
+            msg.coefficients = [];
+            msg.freqPeaks = [];
+            var pointCount = dummyPointCount;
+            for (var i=0; i<pointCount; i++) {
+                if (i==0 || i==(pointCount-1))
+                    dummyPoints[i] = 0;
+                else {
+                    var p = (Math.random() - 0.5) * dummyNoisiness;
+                    dummyPoints[i] = dummyPoints[i] + p;
+                }
+            }
+            for (var i=0; i<pointCount; i++) {
+                if (i==0 || i==(pointCount-1))
+                    msg.coefficients.push(dummyPoints[i])
+                else {
+                    var vrg = dummyPoints[i-1] + dummyPoints[i] + dummyPoints[i+1]
+                    msg.coefficients.push(vrg/3);
+                }
+            }
+            for (var i=0; i<pointCount; i++) {
+                if (i>0 && i<(pointCount-1)) {
+                    if (dummyPoints[i-1] > dummyPoints[i] && dummyPoints[i] < dummyPoints[i+1]) {
+                        msg.freqPeaks.push({
+                            X: linScale(i, 0, pointCount-1, -1, 1),
+                            Y: msg.coefficients[i]
+                        });
+                    }
+                }
+            }
+            msg.freqScale = 2.2;
+            if (cb)
+                cb(msg);
+        }   
+
+        container = document.getElementsByClassName("slider-and-canvas");
+        waveHolder = document.getElementById("waveHolder");
+        slider = document.getElementById("slider");
+        output = document.getElementById("output");
+        console.log(waveHolder);
+
+        var WIDTH = waveHolder.clientWidth; 
+        var HEIGHT=waveHolder.clientHeight; 
+        var ASPECT = WIDTH/HEIGHT;
+
+        // Called by window.onload
+        function init() {
+
+            //console.log(WIDTH);
+
+            // Create the scene -- container obj for all 3js elements: cameras, lights, shapes.  
+                scene = new THREE.Scene();
+
+            // Create the camera. 
+                //Args = field of veiw, aspect ratio, near-clip, far clip
+                camera = new THREE.PerspectiveCamera(35, ASPECT, 0.1, 100);
+                //camera = new THREE.OrthographicCamera(WIDTH/-4, WIDTH/4, HEIGHT/-4, HEIGHT/4, 1, 100);
+                scene.add(camera);
+                camera.position.set(10, 10, 25); //front ortho view
+                //camera.lookAt(new THREE.Vector3(0, 0, 0));
+                //camera.position.x = 15;
+                //camera.position.y = 16;
+                //camera.position.z = 13;
+                //camera.lookAt(scene.position);
+
+        
+            // Create a render. Basically just sets the bg color & size
+                renderer = new THREE.WebGLRenderer({ antialias: true });
+                renderer.setSize(WIDTH, HEIGHT);
+                //renderer.setPixelRatio( window.devicePixelRatio ); #st
+                renderer.setClearColor(0xC5F3FF, 1.0);  //#hc #C5F3FF;
+                //renderer.shadowMapEnabled = true;
+            
+                // Add the output of the renderer to the html
+                canvas = renderer.domElement;
+                canvas.id = "lpc-canvas";
+                waveHolder.appendChild(canvas);
+
+                var material = new THREE.LineBasicMaterial({
+                    color: 0x53c8e9, //53C8E9;
+                    linewidth: 5,
+                    linecap: "round",
+                    //vertexColors: "THREE.VertexColors"
+                });
+
+                var geometry = new THREE.Geometry();
+                geometry.vertices.push(
+                    new THREE.Vector3( -6, 0, 0 ),
+                    new THREE.Vector3( -6, 6, 0 ),
+                    new THREE.Vector3( 6, 6, 0 )
+                );
+
+                var line = new THREE.Line( geometry, material );
+                scene.add( line );
+
+                    // create the ground plane
+                    var planeGeometry = new THREE.PlaneGeometry(15, 15);
+                    var planeMaterial = new THREE.MeshLambertMaterial({color: 0xcccccc});
+                    var plane = new THREE.Mesh(planeGeometry, planeMaterial);
+                    plane.receiveShadow = true;
+
+                    // rotate and position the plane
+                    plane.rotation.x = -0.5 * Math.PI; // this makes a horizontal plane (Shape geometry is horizontal by default)
+                    plane.position.x = 0;
+                    plane.position.y = -4;
+                    plane.position.z = 0;
+
+                    // add the plane to the scene
+                    scene.add(plane);
+                    
+                    // create a cube
+                    var cubeGeometry = new THREE.BoxGeometry(6, 4, 6);
+                    var cubeMaterial = new THREE.MeshLambertMaterial({color: 'red'});
+
+                    //var materialArray = applyFaceColors(cubeGeometry);
+                    //var cubeMaterial = new THREE.MeshFaceMaterial(materialArray);
+                    var cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+                    cube.name='cube';        
+
+                    cube.castShadow = true;
+                    //shape position is 0,0,0 by default
+
+                    // add the cube & vertices to the scene
+                    scene.add(cube);
+                    addVertices(cube);
+
+                    // position and point the camera to the center of the scene
+                    //camera.position.x = 15;
+                    //camera.position.y = 16;
+                    //camera.position.z = 13;
+                    //camera.lookAt(scene.position);
+                
+
+                // add spotlight for the shadows
+                var spotLight = new THREE.SpotLight(0xffffff);
+                spotLight.position.set(10, 20, 20);
+                spotLight.shadowCameraNear = 20;
+                spotLight.shadowCameraFar = 50;
+                spotLight.castShadow = true;
+
+                scene.add(spotLight);
+                
+
+                // setup the control object for the control gui
+                control = new function() {
+                    this.rotationSpeed = 0.005;
+                    //this.opacity = 0.6;
+                    //this.color = cubeMaterial.color.getHex();
+                };
+                addControlGui(control);
+                addStatsObject();
+
+
+                // add the output of the renderer to the html element
+                //document.body.appendChild(renderer.domElement);
+
+                // call the render function, after the first render, interval is determined
+                // by requestAnimationFrame
+                addVertices(cube);
+                render();
+                
+                //console.log(cube);
+                //console.log(cube.geometry.vertices);
+                //console.log(plane);
+                //console.log(camera);
+            
+            
+        }
+
+        function lpcCoefficientCallback(msg) {
+            //var WIDTH = renderer.getSize().width;
+            //var HEIGHT = renderer.getSize().height;
+
+            var peakSegments;
+
+            points = msg.coefficients;
+            //console.log(points);
+
+            peaks = msg.freqPeaks;
+            frequencyScaling = msg.freqScale;
+            
+
+            var material = new THREE.LineBasicMaterial({
+                color: 0x53C8E9, //0x0000ff //$mainBlue
+                linewidth: 1,
+                linecap: "round",
+                //vertexColors: "THREE.VertexColors"
+
+            });
+
+            var geometry = new THREE.Geometry();      
+            for (var i=0; i<points.length; i++) {
+                var point = points[i]; 
+                var px = linScale(i*frequencyScaling, 0, points.length-1, WIDTH/-2, WIDTH/2);
+                //console.log("px is: " + px);
+                geometry.vertices.push(new THREE.Vector3(px, px, 0));
+            }
+            
+                var line = new THREE.Line(geometry, material);
+                line.geometry.dynamic = true;
+                scene.add(line);
+                console.log(line);
+            
+/*
+                    // create a cube
+                    var cubeGeometry = new THREE.BoxGeometry(10, 8, 10);
+                    var cubeMaterial = new THREE.MeshLambertMaterial({color: 'red'});
+
+                    //var materialArray = applyFaceColors(cubeGeometry);
+                    //var cubeMaterial = new THREE.MeshFaceMaterial(materialArray);
+                    
+                    var cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+                    cube.name='cube';        
+
+                    cube.castShadow = true;
+                    //shape position is 0,0,0 by default
+
+                    // add the cube & vertices to the scene
+                    scene.add(cube);
+                    addVertices(cube);
+*
+                    // position and point the camera to the center of the scene
+                    //camera.position.x = 15;
+                    //camera.position.y = 16;
+                    //camera.position.z = 13;
+                    //camera.lookAt(scene.position);
+                */
+
+            /*
+            if (line === undefined) {
+                var material = new THREE.LineBasicMaterial({
+                    color: 0x53C8E9 //0x0000ff //$mainBlue
+                });
+            *
+                      
+                var geometry = new THREE.Geometry();      
+                for (var i=0; i<points.length; i++) {
+                    var point = points[i]; 
+                    var px = linScale(i*frequencyScaling, 0, points.length-1, WIDTH/-2, WIDTH/2);
+                    console.log("px is: " + px);
+                    geometry.vertices.push(new THREE.Vector3(px, 0, 0));
+                }
+                
+                    line = new THREE.Line(geometry, material);
+                    line.geometry.dynamic = true;
+                    scene.add(line);
+                    //console.log(line);
+                }
+                /*
+                    if (peakSegments === undefined) {
+                        var material = new THREE.LineBasicMaterial({
+                            color: 0xFFC95F //0x00ff00 //$darkBlue
+                        });
+                        var geometry = new THREE.Geometry();
+                        peakSegments = new THREE.LineSegments(geometry, material);
+                        scene.add(peakSegments);
+                    }
+                
+
+*/
+        }; // end lpcCoefficientCallback()
+
+        /* *
+         * Add small spheres on each of the vertices of the supplied mesh.
+         * @param mesh
+         */
+        function addVertices(mesh) {
+            /*
+            var vertices = mesh.geometry.vertices;
+            var vertexMaterial = new THREE.MeshPhongMaterial({color: 0x00ff00});
+
+            // for each vertex, add a sphere
+            vertices.forEach(function (vertex) {
+                var vertexSphere = new THREE.SphereGeometry(0.15);
+                var vertexMesh = new THREE.Mesh(vertexSphere, vertexMaterial);
+                vertexMesh.position = vertex;
+                scene.add(vertexMesh);
+            });
+            */
+        }
+
+        function addControlGui(controlObject) {
+            var gui = new dat.GUI();
+            
+            //cube scene gui 
+            
+            gui.add(controlObject, 'rotationSpeed', -0.01, 0.01);
+            //gui.add(controlObject, 'opacity', 0.1, 1);
+            //gui.addColor(controlObject, 'color');
+        }
+
+        function addStatsObject() {
+            stats = new Stats();
+            stats.setMode(0); // mode(0) is fps | mode(1) is ms needed to render each frame
+
+            stats.domElement.style.position = 'absolute';
+            stats.domElement.style.left = '10px';
+            stats.domElement.style.top = '10px';
+
+            document.body.appendChild( stats.domElement );
+        }
+
+        /**
+         * Applies coloring to each individual face and updates the geometry so
+         * the materialIndex points to the correct face
+         *
+         * @param geometry the geometry to create facecolor for
+         * @return an array of materials
+         *
+        function applyFaceColors(geometry) {
+            var result = [];
+
+            var faceCount = 0;
+            geometry.faces.forEach(function(face) {
+                face.materialIndex = faceCount++;
+                result.push(new THREE.MeshBasicMaterial({
+                    // simple way to create a blueish color for each face
+                    color: Math.random()*0x0000FF
+                }));
+            });
+
+            return result;
+        }
+        */
+
+        // RENDER!!!
+        function render() {
+            //obvs use breakpoints for debugging the render/update loop
+/*
+            if (line !== undefined) {
+                for (var i=0; i<points.length; i++) {
+                    var px = linScale(i*frequencyScaling, 0, points.length-1, WIDTH/-2, WIDTH/2);
+                    var py = linScale(points[i], 1, -1, HEIGHT/-2, HEIGHT/2);
+                    line.geometry.vertices[i].set(px, py, 0);
+                }
+                line.geometry.verticesNeedUpdate = true;
+            }
+            /*
+            if (peaks !== undefined) {
+                var geometry = new THREE.Geometry();
+                for (var i=0; i<peaks.length; i++) {
+                    var peak = peaks[i];
+                    var px = linScale(peak.X, -1, 1, 0, frequencyScaling);
+                    px = linScale(px, 0, 1, WIDTH/-2, WIDTH/2);
+                    var py = linScale(peak.Y, 1, -1, HEIGHT/-2, HEIGHT/2);
+                    var v1 = new THREE.Vector3(px, py, 1);
+                    var v2 = new THREE.Vector3(px, HEIGHT/2, 1);
+                    geometry.vertices.push(v1);
+                    geometry.vertices.push(v2);
+                }
+                peakSegments.geometry = geometry;
+                peakSegments.geometry.verticesNeedUpdate = true;
+            }
+            */
+            
+            //  CUBE SCENE
+                // update the camera
+                //var rotSpeed = 0.0;
+                var rotSpeed = control.rotationSpeed;
+                camera.position.x = camera.position.x * Math.cos(rotSpeed) + camera.position.z * Math.sin(rotSpeed);
+                camera.position.z = camera.position.z * Math.cos(rotSpeed) - camera.position.x * Math.sin(rotSpeed);
+                camera.lookAt(scene.position);
+
+                // change opacity
+                //scene.getObjectByName('cube').material.opacity = control.opacity;
+
+                // change color
+                //scene.getObjectByName('cube').material.color = new THREE.Color(control.color);
+            
+
+
+            // update FPS stats
+            stats.update();
+
+            getDummyLPCCoefficients(lpcCoefficientCallback);
+
+            // render using requestAnimationFrame
+            requestAnimationFrame(render);
+            //update();
+            renderer.render(scene, camera);
+        }
+
+
+        // helper fx for resize event 
+            function handleResize() { 
+                // if perspective cam
+                camera.aspect = waveHolder.clientWidth / waveHolder.clientHeight;
+                
+                // if ortho cam
+                //camera.left = -WIDTH/2;
+                //camera.right = WIDTH/2;
+                //camera.top = -HEIGHT/2;
+                //camera.bottom = HEIGHT/2;
+                
+                
+                camera.updateProjectionMatrix();
+                renderer.setSize(waveHolder.clientWidth, waveHolder.clientHeight);
+            }       
+
+        // window.onload
+            window.onload = init;
+            window.addEventListener('resize', handleResize, false);
+
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,168 @@
+/*
+* {
+	border-radius: 4px;
+}
+
+body {
+    margin: 0;
+    overflow: hidden;
+} 
+
+h1 {
+	display: block;
+	text-align: center;
+	font-family: sans-serif;
+	font-weight: 400;
+	margin: 30px;
+	color: #53C8E9;
+}
+*/
+.lpc-container {
+	display: block;
+	position: relative;
+	width: 70vw;
+	height: 70vh;
+	margin: 5% auto;
+	padding: 0;
+	border-radius: 4px;
+	background-color: #F0F9FC;
+	border: 15px solid #F0F9FC;
+	border-bottom: 25px solid #F0F9FC;
+	box-shadow: 1px 1px 1px rgba(0,0,0,0.15);
+}
+
+
+.slider-and-canvas {
+	/*display: inline-block;*/
+	/*position: absolute;
+	left: 0;*/
+	position: absolute;
+	width: 100%;
+	height: 100%;
+	border: 0px solid lime;
+}
+
+#waveHolder {
+	height: 85%;
+	width: 100%;
+	border: 0px solid blue;
+	z-index: 0;
+}
+
+#lpc-canvas {  /* this is created by 3js */
+	/*width: 100%;
+	height: 100%;*/
+	margin: auto;
+	border-radius: 4px;
+	border: 1px solid red;
+
+	box-shadow: 3px 3px 3px rgba(0,0,0,0.05); 
+	z-index: 0;
+}
+
+
+.lpc-range {
+	/*height: 400px;*/
+	background-color: transparent;
+	position: absolute;
+	top: 0;
+	z-index: 99;
+	left: 0;
+	height: 100%;
+	width: 100%;
+	border: 0px solid red;
+}
+
+	input[type=range] {
+		-webkit-appearance: none;
+		background-color: transparent;
+		box-shadow: none; 
+		overflow: visible;
+		position: absolute;
+		bottom: 5px;
+		left: -2px;
+		width: 100%;
+		z-index: 99;
+		border: 0px solid blue;
+	}
+
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      margin-top: 0px;
+      width: 50px;
+      height: 50px;
+      border-radius: 50px;
+      background-color: #53C8E9;
+      top: -8px;
+      margin-right: 50px;
+      box-shadow: 1px 1px 1px rgba(0,0,0,0.15);
+      z-index: 9999999999;
+      border: 1px solid green;
+    }
+
+	.lpc-container output {
+		position: absolute;
+		top: 20px;
+		display: block;
+		width: 50px;
+		height: 24px;
+		border: 1px solid #e2e2e2;
+		background-color: #fff;
+		border-radius: 3px;
+		color: #4d4d4d;
+		font-size: .8em;
+		font-weight: bold;
+		line-height: 24px;
+		text-align: center;
+	}
+
+	.lpc-container output:after {
+			content: '';
+			height: 345px;
+			width: 2px;
+			background-color: white;
+			display: block;
+			margin-left: 50%;
+			margin-right: 50%;
+			position: absolute;
+			top: -20px;
+			z-index: -1;
+	}
+
+#sand {
+	height: 60px;
+	display: block;
+	position: absolute;
+	left: -1px;
+	bottom: 0px;
+	width: 100.3%;
+	background-color: #FFECCB;
+	border: 0px solid lime;
+}
+
+
+
+
+
+/*
+PALETTE
+color: #717171; /* lighter text gray 
+#4d4d4d; /* text gray 
+#ffffff; /* white 
+#F0F9FC; /* white-blue 
+#C5F3FF; /* light blue 
+#53C8E9; /* main blue 
+#0FABC1; /* teal 
+#018B9D; /* dark blue 
+#FFC95F; /* yellow 
+#FFECCB; /* light yellow 
+#F9CDA5; /* tan 
+#e79b4c; /* orange 
+#e08626; /* deep orange 
+
+INSET
+box-shadow: inset 2px 0px 2px rgba(77, 77, 77, 0.25);
+
+OBJECTS
+box-shadow: 1px 1px 1px rgba(0,0,0,0.15);
+*/

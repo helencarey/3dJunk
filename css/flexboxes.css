@@ -1,0 +1,87 @@
+PALETTE
+color: #717171; /* lighter text gray */
+#4d4d4d; /* text gray */
+#ffffff; /* white */
+#F0F9FC; /* white-blue */
+#C5F3FF; /* light blue */
+#53C8E9; /* main blue */
+#0FABC1; /* teal */
+#018B9D; /* dark blue */
+#FFC95F; /* yellow */
+#FFECCB; /* light yellow */
+#F9CDA5; /* tan */
+#e79b4c; /* orange */
+#e08626; /* deep orange */
+
+
+
+/* INSET */
+box-shadow: inset 2px 0px 2px rgba(77, 77, 77, 0.25);
+
+/* OBJECTS */
+box-shadow: 1px 1px 1px rgba(0,0,0,0.15);
+
+
+
+/* PARENT ELE */
+
+.flexParent {
+	display: flex;
+	display: inline-flex;
+
+	flex-direction: row;
+	flex-direction: column;
+	flex-direction: row-reverse;
+	flex-direction: column-reverse;
+
+	flex-wrap: nowrap;
+	flex-wrap: wrap;
+	flex-wrap: wrap-reverse;
+
+	/* aligns items along the MAIN axis */
+	justify-content: flex-start;
+	justify-content: flex-end;
+	justify-content: center;
+	justify-content: space-between;
+	justify-content: space-around;
+	
+	/* aligns items along the CROSS axis */
+	align-items: flex-start;
+	align-items: flex-end;
+	align-items: center;
+	align-items: baseline;
+	align-items: stretch;
+
+	/* only applies in case of item wrap. Similar to justify-contnent */
+	align-content: flex-start;	
+	align-content: flex-end;
+	align-content: center;
+	align-content: space-between;
+	align-content: space-around;
+	align-content: stretch;
+}
+
+.flexItem {
+	order: 1;  /* pos or neg interger of where item appears in flex item list */
+	
+	align-self: auto;
+	align-self: flex-start;
+	align-self: flex-end;
+	align-self: center;
+	align-self: baseline;
+	align-self: stretch;
+
+	flex-grow:;
+	flex-shrink:;
+	flex-basis:;
+	flex: ; /* shortcut notation */
+}
+
+/* 
+FLEX GROW
+
+The flex-grow property sets the flex grow factor of a flex item. A flex grow factor is a <number> which determines how much the flex item will grow relative to the rest of the flex items in the flex container when positive free space is distributed. The initial value is zero (0), and negative numbers are invalid.
+If the flex items are laid out on the flex line such that they don’t take up the entire space on that line, you can “expand” the flex items so that they fill up the entire line. The amount of available space on the line can be distributed among the flex items following a specific proportion that you can specify using the flex-grow property. The higher the flex-grow value, the more the item will be allowed to grow relative to the other items.
+For example, you can distribute the space among the flex items such that one of these items always gets twice as much space as the others. You can do that by setting the flex-grow property value to 2 (two). An item with flex-grow: 2 will grow twice as much as an item with flex-grow: 1—it gets twice as much space as the latter. So, for every one pixel that the second item gets, the first item grows by two pixels.
+
+*/

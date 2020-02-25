@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>3D hc</title>
+
+    <!-- STYLES -->
+    <link rel="stylesheet" type="text/css" href="../css/styles.css">
+
+    <!-- FAV FONTS -->
+    <!-- <link href='https://fonts.googleapis.com/css?family=Lato:100,300,400,700' rel='stylesheet' type='text/css'> -->
+    <!-- <link href="https://fonts.googleapis.com/css?family=Cutive+Mono" rel="stylesheet"> -->
+    <link href="https://fonts.googleapis.com/css?family=Roboto+Mono:100,300,400,400i,700,700i" rel="stylesheet">
+
+    <!-- LIBS -->
+    <script src="../libs/jQ/jquery-1.11.3.min.js"></script>
+    <script src="../libs/three.js"></script>
+    <script src="../libs/OrbitControls.js"></script>
+    <script src="../libs/dat.gui.min.js"></script>
+    <script src="../libs/stats.min.js"></script>
+    <script src="../libs/EffectComposer.js"></script>
+    <script src="../libs/RenderPass.js"></script>
+    <script src="../libs/CopyShader.js"></script>
+    <script src="../libs/ShaderPass.js"></script>
+    <script src="../libs/MaskPass.js"></script>
+
+</head>
+<body>   
+    <header><h1></h1></header>
+    
+    <main id="main">
+        <div class="left">
+            <nav><ul></ul><nav>
+            <div id="notesWrap">
+                <h2 id="notesHead" class="notes"></h2>
+                <div id="notesTxt" class="notes"></div>
+            </div>
+        </div>
+        <div id="threeBox" class="mid"></div>
+        <div class="right"></div>
+    </main>
+
+    <footer></footer>
+
+
+    <!-- SCRIPTS --> 
+        <script src="../js/webAudioUtils.js"></script> 
+        <script src="../js/THREEobj_hcTemplate.js"></script> 
+        <script src="../js/app.js"></script> 
+        <script>
+            window.onload = initGlobe;
+        </script>
+</body>
+</html>
